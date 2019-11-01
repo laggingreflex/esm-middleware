@@ -817,28 +817,37 @@ describe("root option", () => {
     });
     const app = express();
     app.use(esm("/app/src", { nodeModulesRoot: "/app/node_modules" }));
-    const res = await request(app).get("/node_modules/foo/dist/index.js");
+    const res = await request(app).get("/app/node_modules/foo/dist/index.js");
     expect(res.status).toEqual(200);
     expect(res.text).toMatchInlineSnapshot("\"export default 'foo';\"");
   });
 
-  test("middleware mounted on root, modules requested at `path` matching `root`", async () => {
+  test("requested url is an allowed absolute path", async () => {
+    fs.__setFiles({
+      path: "/app/src/app.js",
+      content: "export default 'foo';"
+    });
+    const app = express();
+    app.use(esm("/app/src", { nodeModulesRoot: "/app/node_modules" }));
+    const res = await request(app).get("/app/src/app.js");
+    expect(res.status).toEqual(200);
+    expect(res.text).toMatchInlineSnapshot("\"export default 'foo';\"");
+  });
+
+  test("requested path neither in root nor in nodeModulesRoot", async () => {
     fs.__setFiles(
       {
-        path: "/app/client/app.js",
-        content: "import lodash from 'lodash';"
+        path: "/app/src/app.js",
+        content: "export default 'foo';"
       },
       {
-        path: "/app/node_modules/lodash/index.js",
-        content: "export default 'lodash';"
+        path: "/bar.js",
+        content: "export default 'bar';"
       }
     );
     const app = express();
-    app.use(esm("/app/client", { nodeModulesRoot: "/app/node_modules" }));
-    const res = await request(app).get("/client/app.js");
-    expect(res.status).toEqual(200);
-    expect(res.text).toMatchInlineSnapshot(
-      '"import lodash from \\"/node_modules/lodash/index.js\\";"'
-    );
+    app.use(esm("/app/src", { nodeModulesRoot: "/app/node_modules" }));
+    const res = await request(app).get("/bar.js");
+    expect(res.status).toEqual(404);
   });
 });

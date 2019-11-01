@@ -108,7 +108,7 @@ function esmMiddlewareFactory(root = path.resolve(), options = {}) {
 
   /**
    * @param {string} url
-   * @returns {string}
+   * @returns {string | null}
    */
   function translateToLocalPath(url) {
     if (
@@ -117,15 +117,21 @@ function esmMiddlewareFactory(root = path.resolve(), options = {}) {
     ) {
       throw new TypeError("nodeModulesRoot: absolute path expected");
     }
-    const nodeModulesRootBasename = path.basename(finalOptions.nodeModulesRoot);
-    if (url.slice(1).startsWith(nodeModulesRootBasename)) {
-      return path.join(path.dirname(finalOptions.nodeModulesRoot), url);
+    const attempt1 = path.join(
+      finalOptions.nodeModulesRoot,
+      url.replace(finalOptions.nodeModulesRoot, "")
+    );
+    if (fs.existsSync(attempt1)) {
+      return attempt1;
     }
-    const rootBasename = path.basename(root);
-    if (url.slice(1).startsWith(rootBasename)) {
-      return path.join(path.dirname(root), url);
+    if (typeof root !== "string") {
+      throw new TypeError("root: absolute path expected");
     }
-    return path.join(root, url);
+    const attempt2 = path.join(root, url.replace(root, ""));
+    if (fs.existsSync(attempt2)) {
+      return attempt2;
+    }
+    return null;
   }
 
   /** @type {import("express").Handler} */
@@ -134,7 +140,7 @@ function esmMiddlewareFactory(root = path.resolve(), options = {}) {
       return next();
     }
     const filePath = translateToLocalPath(req.url);
-    if (!fs.existsSync(filePath)) {
+    if (filePath === null) {
       return next();
     }
     const content = fs.readFileSync(filePath, { encoding: "utf8" });
