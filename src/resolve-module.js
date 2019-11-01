@@ -112,14 +112,7 @@ function resolveModule(source, nodeModulesRoot, currentModuleDir) {
   if (MODULE_SPECIFIER_PATTERN.test(source)) {
     return resolveValidModuleSpecifier(source, currentModuleDir);
   }
-  const result = resolveInvalidModuleSpecifier(source, nodeModulesRoot);
-  if (result !== null) {
-    return path.join(
-      path.sep,
-      result.replace(path.dirname(nodeModulesRoot), "")
-    );
-  }
-  return result;
+  return resolveInvalidModuleSpecifier(source, nodeModulesRoot);
 }
 
 module.exports = {

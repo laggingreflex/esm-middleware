@@ -759,34 +759,7 @@ describe("removeUnresolved option", () => {
 });
 
 describe("root option", () => {
-  test("middleware mounted on path", async () => {
-    fs.__setFiles(
-      {
-        path: "/app/src/app.js",
-        content: 'import foo from "foo";'
-      },
-      {
-        path: "/app/node_modules/foo/package.json",
-        content: JSON.stringify({ module: "es/index.js" })
-      },
-      {
-        path: "/app/node_modules/foo/es/index.js",
-        content: "export default 'foo';"
-      }
-    );
-    const app = express();
-    app.use(
-      "/client",
-      esm("/app/src", { nodeModulesRoot: "/app/node_modules" })
-    );
-    const response = await request(app).get("/client/app.js");
-    expect(response.status).toEqual(200);
-    expect(response.text).toMatchInlineSnapshot(
-      '"import foo from \\"/node_modules/foo/es/index.js\\";"'
-    );
-  });
-
-  test("middleware mounted on root", async () => {
+  test("requested url relative `root` path", async () => {
     fs.__setFiles(
       {
         path: "/app/src/app.js",
@@ -806,7 +779,7 @@ describe("root option", () => {
     const response = await request(app).get("/app.js");
     expect(response.status).toEqual(200);
     expect(response.text).toMatchInlineSnapshot(
-      '"import foo from \\"/node_modules/foo/es/index.js\\";"'
+      '"import foo from \\"/app/node_modules/foo/es/index.js\\";"'
     );
   });
 
@@ -822,7 +795,7 @@ describe("root option", () => {
     expect(res.text).toMatchInlineSnapshot("\"export default 'foo';\"");
   });
 
-  test("requested url is an allowed absolute path", async () => {
+  test("requested url allowed absolute path", async () => {
     fs.__setFiles({
       path: "/app/src/app.js",
       content: "export default 'foo';"
@@ -834,7 +807,7 @@ describe("root option", () => {
     expect(res.text).toMatchInlineSnapshot("\"export default 'foo';\"");
   });
 
-  test("requested path neither in root nor in nodeModulesRoot", async () => {
+  test("requested url not an allowed absolute path", async () => {
     fs.__setFiles(
       {
         path: "/app/src/app.js",
